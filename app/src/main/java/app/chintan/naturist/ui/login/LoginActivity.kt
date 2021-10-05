@@ -1,42 +1,87 @@
 package app.chintan.naturist.ui.login
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View.GONE
+import android.view.View.VISIBLE
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import app.chintan.naturist.MainActivity
 import app.chintan.naturist.R
+import app.chintan.naturist.databinding.ActivityLoginBinding
+import app.chintan.naturist.model.UserRole
+import app.chintan.naturist.util.State
+import app.chintan.naturist.util.UserSessionManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class LoginActivity : AppCompatActivity() {
 
-    private lateinit var auth: FirebaseAuth
 
-    private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var binding: ActivityLoginBinding
+
+    private val loginViewModel: LoginViewModel by viewModels()
+
+    private lateinit var userSessionManager: UserSessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        // Configure Google Sign In
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("Web client OAuth 2.0")
-            .requestEmail()
-            .build()
+        userSessionManager=UserSessionManager(this)
 
-        googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        auth = Firebase.auth
+        setUpOnClick()
+        setUpObserver()
+    }
 
+
+    private fun setUpOnClick() {
+        binding.googleSignInBt.setOnClickListener { checkRoleAndSignIn() }
+    }
+
+    private fun setUpObserver() {
+        loginViewModel.firebaseAuthLiveData.observe(this, Observer {
+            when (it) {
+                is State.Success -> updateUserRole()
+                is State.Error -> Toast.makeText(applicationContext,
+                    "Login Failed",
+                    Toast.LENGTH_SHORT).show()
+                is State.Loading -> binding.progressBar.visibility = VISIBLE
+            }
+
+        })
+
+        loginViewModel.updateUserRoleLiveData.observe(this, Observer {
+            when (it) {
+                is State.Success -> {
+                    goToHomeUI()
+                    binding.progressBar.visibility = GONE
+                }
+                is State.Error -> {
+                    Toast.makeText(applicationContext, "Login Failed", Toast.LENGTH_SHORT).show()
+                    binding.progressBar.visibility = GONE
+                }
+                is State.Loading -> binding.progressBar.visibility = VISIBLE
+            }
+
+        })
+    }
+
+    private fun checkRoleAndSignIn() {
+        if (binding.userRoleRg.checkedRadioButtonId == -1) {
+            Toast.makeText(applicationContext, "Please select a role", Toast.LENGTH_SHORT).show()
+            return
+        }
         signIn()
     }
 
@@ -49,7 +94,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun signIn() {
         //signIn Intent
-        val signInIntent = googleSignInClient.signInIntent
+        val signInIntent = userSessionManager.googleSignInClient.signInIntent
         signInLauncher.launch(signInIntent)
     }
 
@@ -61,7 +106,7 @@ class LoginActivity : AppCompatActivity() {
                 // Google Sign In was successful, authenticate with Firebase
                 val account = task.getResult(ApiException::class.java)!!
                 Log.d(TAG, "firebaseAuthWithGoogle:" + account.id)
-                firebaseAuthWithGoogle(account.idToken!!)
+                loginViewModel.firebaseAuthWithGoogle(account.idToken!!)
             } catch (e: ApiException) {
                 // Google Sign In failed, update UI appropriately
                 Log.w(TAG, "Google sign in failed", e)
@@ -71,40 +116,32 @@ class LoginActivity : AppCompatActivity() {
 
     }
 
-    private fun firebaseAuthWithGoogle(idToken: String) {
-        val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    // Sign in success, update UI with the signed-in user's information
-                    Log.d(TAG, "signInWithCredential:success")
-                    val user = auth.currentUser
-                    updateUI(user)
-                } else {
-                    // If sign in fails, display a message to the user.
-                    Log.w(TAG, "signInWithCredential:failure", task.exception)
-                    updateUI(null)
-                }
+
+    override fun onStart() {
+        super.onStart()
+        // Check if user is signed in (non-null) and update UI accordingly.
+        loginViewModel.getCurrentUser()?.let {
+            goToHomeUI()
+        }
+    }
+
+    private fun updateUserRole() {
+        when (binding.userRoleRg.checkedRadioButtonId) {
+            R.id.adminRb -> {
+                loginViewModel.updateUserRole(UserRole.ADMIN)
             }
+            R.id.userRb -> {
+                loginViewModel.updateUserRole(UserRole.USER)
+            }
+        }
+    }
+
+    private fun goToHomeUI() {
+        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+        finish()
     }
 
     companion object {
         private const val TAG = "LoginActivity"
     }
-
-    override fun onStart() {
-        super.onStart()
-        // Check if user is signed in (non-null) and update UI accordingly.
-        val currentUser = auth.currentUser
-        updateUI(currentUser)
-    }
-
-    private fun updateUI(currentUser: FirebaseUser?) {
-
-        if (currentUser != null) {
-
-        }
-
-    }
-
 }
