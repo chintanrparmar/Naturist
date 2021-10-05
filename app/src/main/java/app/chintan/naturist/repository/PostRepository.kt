@@ -1,10 +1,13 @@
 package app.chintan.naturist.repository
 
+import android.graphics.Bitmap
 import app.chintan.naturist.model.Post
 import app.chintan.naturist.util.Constants.POST_COLLECTION
 import app.chintan.naturist.util.State
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -12,6 +15,7 @@ import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
 
 class PostRepository {
 
@@ -55,4 +59,33 @@ class PostRepository {
     }.catch {
         emit(State.error(it.message.toString()))
     }.flowOn(Dispatchers.IO)
+
+    @ExperimentalCoroutinesApi
+    fun uploadImage(bitmap: Bitmap): Flow<State<String>> = callbackFlow {
+        val storage = Firebase.storage
+        val storageRef = storage.reference
+        val mountainsRef = storageRef.child("mountains.jpg")
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        val data = baos.toByteArray()
+
+        val uploadTask = mountainsRef.putBytes(data)
+        uploadTask.addOnFailureListener {
+            trySendBlocking(State.success("Uploading Failed"))
+                .onFailure { throwable ->
+                    throwable?.message?.let {
+                        State.error<String>(it)
+                    }
+                }
+        }.addOnSuccessListener { taskSnapshot ->
+            trySendBlocking(State.success("Successfully Uploaded"))
+                .onFailure { throwable ->
+                    throwable?.message?.let {
+                        State.error<String>(it)
+                    }
+                }
+
+        }
+
+    }
 }
