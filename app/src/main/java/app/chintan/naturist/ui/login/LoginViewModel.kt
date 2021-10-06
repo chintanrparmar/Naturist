@@ -8,11 +8,9 @@ import androidx.lifecycle.viewModelScope
 import app.chintan.naturist.model.UserProfile
 import app.chintan.naturist.model.UserRole
 import app.chintan.naturist.repository.UserRepository
+import app.chintan.naturist.util.FirebaseUserManager
 import app.chintan.naturist.util.State
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -21,9 +19,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(private val userRepository: UserRepository) : ViewModel() {
-
-
-    private val auth: FirebaseAuth = Firebase.auth
 
     private val _firebaseAuthLiveData = MutableLiveData<State<String>>()
     val firebaseAuthLiveData: LiveData<State<String>> = _firebaseAuthLiveData
@@ -35,7 +30,7 @@ class LoginViewModel @Inject constructor(private val userRepository: UserReposit
     fun firebaseAuthWithGoogle(idToken: String) {
         _firebaseAuthLiveData.postValue(State.loading())
         val credential = GoogleAuthProvider.getCredential(idToken, null)
-        auth.signInWithCredential(credential)
+        FirebaseUserManager.getAuth().signInWithCredential(credential)
             .addOnCompleteListener() { task ->
                 if (task.isSuccessful) {
                     // Sign in success, update UI with the signed-in user's information
@@ -51,7 +46,7 @@ class LoginViewModel @Inject constructor(private val userRepository: UserReposit
 
     fun updateUserRole(userRole: UserRole) {
         _updateUserRoleLiveData.postValue(State.loading())
-        getCurrentUser().let {
+        FirebaseUserManager.getCurrentUser().let {
             val userProfile = UserProfile()
             userProfile.uid = it?.uid
             userProfile.role = userRole
@@ -74,8 +69,6 @@ class LoginViewModel @Inject constructor(private val userRepository: UserReposit
         }
     }
 
-
-    fun getCurrentUser() = auth.currentUser
 
     companion object {
         private const val TAG = "LoginViewModel"

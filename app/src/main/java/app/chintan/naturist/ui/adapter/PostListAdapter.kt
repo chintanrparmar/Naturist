@@ -7,8 +7,8 @@ import app.chintan.naturist.databinding.PostItemBinding
 import app.chintan.naturist.model.Post
 import coil.load
 
-class BlogListAdapter(private val list: List<Post>, val adapterOnClick: (Any) -> Unit) :
-    RecyclerView.Adapter<BlogListAdapter.BlogItemView>() {
+class PostListAdapter(private val list: List<Post>, val adapterOnClick: (Any) -> Unit) :
+    RecyclerView.Adapter<PostListAdapter.BlogItemView>() {
     inner class BlogItemView(private val binding: PostItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(post: Post) {

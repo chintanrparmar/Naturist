@@ -7,23 +7,36 @@ import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import app.chintan.naturist.R
 import app.chintan.naturist.databinding.FragmentPostListBinding
 import app.chintan.naturist.model.Post
-import app.chintan.naturist.ui.adapter.BlogListAdapter
+import app.chintan.naturist.model.UserRole
+import app.chintan.naturist.ui.adapter.PostListAdapter
+import app.chintan.naturist.util.Constants.ROLE_KEY
 import app.chintan.naturist.util.State
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class PostListFragment : Fragment() {
 
     private val postViewModel: PostViewModel by activityViewModels()
     private var _binding: FragmentPostListBinding? = null
+
+    @Inject
+    lateinit var prefDataStore: DataStore<Preferences>
+
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -49,6 +62,7 @@ class PostListFragment : Fragment() {
         setUpOnClick()
         setUpObserver()
         loadPosts()
+        checkUserRole()
     }
 
     private fun setUpObserver() {
@@ -70,7 +84,7 @@ class PostListFragment : Fragment() {
 
     private fun updateBlogListUI(data: List<Post>) {
 
-        val adapter = BlogListAdapter(data) {
+        val adapter = PostListAdapter(data) {
             val clickedPost = it as Post
             postViewModel.setSelectedPost(clickedPost)
             findNavController().navigate(R.id.action_navigation_post_list_to_postDetailFragment)
@@ -86,11 +100,27 @@ class PostListFragment : Fragment() {
 
     private fun setUpOnClick() {
         binding.createPostFab.setOnClickListener {
-            postViewModel.addPost(Post("https://i.ibb.co/4NWLMf6/mountain.jpg",
-                "Mountain Nature",
-                "A mountain is an elevated portion of the Earth's crust, generally with steep sides that show significant exposed bedrock. A mountain differs from a plateau in having a limited summit area, and is larger than a hill, typically rising at least 300 metres (1000 feet) above the surrounding land."))
+            findNavController().navigate(R.id.action_navigation_post_list_to_createPostFragment)
         }
     }
 
+    private fun checkUserRole() {
+        lifecycleScope.launch {
+            readUserRole().collect {
+                if (it == UserRole.ADMIN.name) {
+                    binding.createPostFab.visibility = VISIBLE
+                } else {
+                    binding.createPostFab.visibility = GONE
+                }
+            }
+        }
+    }
+
+    private fun readUserRole(): Flow<String> = prefDataStore.data
+        .map { currentPreferences ->
+            // Lets fetch the data from our DataStore by using the same key which we used earlier for storing the data.
+            val name = currentPreferences[ROLE_KEY] ?: ""
+            name
+        }
 
 }

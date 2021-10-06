@@ -8,17 +8,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import app.chintan.naturist.databinding.FragmentProfileBinding
 import app.chintan.naturist.ui.login.LoginActivity
+import app.chintan.naturist.util.FirebaseUserManager
 import app.chintan.naturist.util.UserSessionManager
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
 
     private var _binding: FragmentProfileBinding? = null
-    private val auth: FirebaseAuth = Firebase.auth
 
     private lateinit var userSessionManager: UserSessionManager
 
@@ -52,7 +49,7 @@ class ProfileFragment : Fragment() {
 
     private fun signOut() {
         // Firebase sign out
-        auth.signOut()
+        FirebaseUserManager.getAuth().signOut()
 
         // Google sign out
         userSessionManager.googleSignInClient.signOut()

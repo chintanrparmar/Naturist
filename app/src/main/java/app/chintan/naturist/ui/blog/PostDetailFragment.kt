@@ -9,10 +9,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import app.chintan.naturist.databinding.FragmentPostDetailBinding
 import app.chintan.naturist.model.Post
+import app.chintan.naturist.util.FirebaseUserManager
 import app.chintan.naturist.util.State
 import coil.load
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,6 +26,7 @@ class PostDetailFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
+    private var selectedPostId = ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,10 +72,16 @@ class PostDetailFragment : Fragment() {
         binding.postImage.load(data.imageUrl)
         binding.postTitle.text = data.title
         binding.postDesc.text = data.description
+        selectedPostId = data.id.toString()
     }
 
     private fun setUpOnClick() {
+        binding.likeBt.setOnClickListener {
+            FirebaseUserManager.getUserId()?.let { uid ->
+                postViewModel.likePost(selectedPostId, uid
+                )
+            }
+        }
     }
-
 
 }

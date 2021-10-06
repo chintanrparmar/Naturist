@@ -83,5 +83,15 @@
         app:layout_constraintTop_toTopOf="@id/topGuideLine"
         tools:visibility="visible" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/likeBt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="10dp"
+        android:src="@drawable/ic_baseline_favorite_24"
+        app:layout_constraintBottom_toBottomOf="@id/bottomGuideLine"
+        app:layout_constraintEnd_toEndOf="@id/endGuideLine" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

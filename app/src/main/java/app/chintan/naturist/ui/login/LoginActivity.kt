@@ -11,20 +11,31 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import app.chintan.naturist.MainActivity
 import app.chintan.naturist.R
 import app.chintan.naturist.databinding.ActivityLoginBinding
 import app.chintan.naturist.model.UserRole
+import app.chintan.naturist.util.Constants.ROLE_KEY
+import app.chintan.naturist.util.FirebaseUserManager
 import app.chintan.naturist.util.State
 import app.chintan.naturist.util.UserSessionManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class LoginActivity : AppCompatActivity() {
 
+    @Inject
+    lateinit var prefDataStore: DataStore<Preferences>
 
     private lateinit var binding: ActivityLoginBinding
 
@@ -37,7 +48,7 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        userSessionManager=UserSessionManager(this)
+        userSessionManager = UserSessionManager(this)
 
 
         setUpOnClick()
@@ -75,6 +86,14 @@ class LoginActivity : AppCompatActivity() {
             }
 
         })
+    }
+
+    private fun saveRoleLocally(role: UserRole) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            prefDataStore.edit { userDetails ->
+                userDetails[ROLE_KEY] = role.name
+            }
+        }
     }
 
     private fun checkRoleAndSignIn() {
@@ -120,7 +139,7 @@ class LoginActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         // Check if user is signed in (non-null) and update UI accordingly.
-        loginViewModel.getCurrentUser()?.let {
+        FirebaseUserManager.getCurrentUser()?.let {
             goToHomeUI()
         }
     }
@@ -129,9 +148,11 @@ class LoginActivity : AppCompatActivity() {
         when (binding.userRoleRg.checkedRadioButtonId) {
             R.id.adminRb -> {
                 loginViewModel.updateUserRole(UserRole.ADMIN)
+                saveRoleLocally(UserRole.ADMIN)
             }
             R.id.userRb -> {
                 loginViewModel.updateUserRole(UserRole.USER)
+                saveRoleLocally(UserRole.USER)
             }
         }
     }

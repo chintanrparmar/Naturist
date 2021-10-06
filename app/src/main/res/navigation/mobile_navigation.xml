@@ -13,13 +13,20 @@
         <action
             android:id="@+id/action_navigation_post_list_to_postDetailFragment"
             app:destination="@id/postDetailFragment" />
+        <action
+            android:id="@+id/action_navigation_post_list_to_createPostFragment"
+            app:destination="@id/createPostFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/navigation_favourite"
         android:name="app.chintan.naturist.ui.favourite.FavouriteFragment"
         android:label="@string/title_favourite"
-        tools:layout="@layout/fragment_favourite" />
+        tools:layout="@layout/fragment_favourite" >
+        <action
+            android:id="@+id/action_navigation_favourite_to_postDetailFragment"
+            app:destination="@id/postDetailFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_profile"
@@ -31,4 +38,9 @@
         android:name="app.chintan.naturist.ui.blog.PostDetailFragment"
         android:label="Post Detail"
         tools:layout="@layout/fragment_post_detail" />
+    <fragment
+        android:id="@+id/createPostFragment"
+        android:name="app.chintan.naturist.ui.blog.CreatePostFragment"
+        android:label="CreatePostFragment"
+        tools:layout="@layout/fragment_post_create" />
 </navigation>
